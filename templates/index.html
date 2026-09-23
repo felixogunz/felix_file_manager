@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Felix File Manager</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- Notification -->
+
+    <div
+        class="notification"
+        id="notification"
+        role="status"
+        aria-live="polite"
+    ></div>
+
+
+    <div class="app">
+
+
+        <aside class="sidebar">
+
+
+            <!-- Brand -->
+
+            <div class="brand">
+
+                <div class="brand-logo">
+                    F
+                </div>
+
+                <div>
+
+                    <h1>
+                        Felix
+                    </h1>
+
+                    <span>
+                        File Manager
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Navigation -->
+
+            <nav class="navigation">
+
+
+                <a
+                    href="#"
+                    class="nav-link active"
+                >
+
+                    <span class="nav-icon">
+                        ⌂
+                    </span>
+
+                    <span>
+                        Dashboard
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+
+                    <span class="nav-icon">
+                        ▣
+                    </span>
+
+                    <span>
+                        My Files
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+
+                    <span class="nav-icon">
+                        ◷
+                    </span>
+
+                    <span>
+                        Recent
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+
+                    <span class="nav-icon">
+                        ◫
+                    </span>
+
+                    <span>
+                        Storage
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+
+                    <span class="nav-icon">
+                        ⚙
+                    </span>
+
+                    <span>
+                        Settings
+                    </span>
+
+                </a>
+
+
+            </nav>
+
+
+            <!-- Sidebar Footer -->
+
+            <div class="sidebar-footer">
+
+                <p>
+                    Felix File Manager
+                </p>
+
+                <span>
+                    Version 1.0
+                </span>
+
+            </div>
+
+
+        </aside>
+
+
+
+        <main class="main-content">
+
+
+            <!-- Top Bar -->
+
+            <header class="top-bar">
+
+
+                <div>
+
+                    <p class="welcome-text">
+                        Welcome back
+                    </p>
+
+                    <h2>
+                        My Files
+                    </h2>
+
+                </div>
+
+
+                <div class="status">
+
+                    <span class="status-dot"></span>
+
+                    <span>
+                        System Online
+                    </span>
+
+                </div>
+
+
+            </header>
+
+
+
+            <section class="page-introduction">
+
+
+                <div>
+
+                    <h3>
+                        Manage your files
+                    </h3>
+
+                    <p>
+                        Upload, organise, search and manage your files
+                        from one simple workspace.
+                    </p>
+
+                </div>
+
+
+            </section>
+
+
+
+            <section class="stats-section">
+
+
+                <!-- Total Files -->
+
+                <div class="stat-card">
+
+
+                    <div class="stat-icon">
+                        ▣
+                    </div>
+
+
+                    <div>
+
+                        <span class="stat-label">
+                            Total Files
+                        </span>
+
+
+                        <strong id="totalFiles">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- Storage Used -->
+
+                <div class="stat-card">
+
+
+                    <div class="stat-icon">
+                        ◫
+                    </div>
+
+
+                    <div>
+
+                        <span class="stat-label">
+                            Storage Used
+                        </span>
+
+
+                        <strong id="storageUsed">
+                            0 Bytes
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+
+            <section class="upload-section">
+
+
+                <div
+                    class="upload-card"
+                    id="uploadCard"
+                >
+
+
+                    <div class="upload-icon">
+                        ↑
+                    </div>
+
+
+                    <h3>
+                        Upload your files
+                    </h3>
+
+
+                    <p>
+                        Drag and drop your files here or choose files
+                        from your computer.
+                    </p>
+
+
+                    <button
+                        type="button"
+                        class="upload-button"
+                        id="uploadButton"
+                    >
+                        Choose Files
+                    </button>
+
+
+                    <input
+                        type="file"
+                        id="fileInput"
+                        hidden
+                        multiple
+                    >
+
+
+                    <small>
+
+                        Maximum 10 MB per file.
+
+                        PDF, DOC, DOCX, XLS, XLSX, CSV,
+                        PPT, PPTX, JPG, PNG, GIF, TXT and ZIP supported.
+
+                    </small>
+
+
+                </div>
+
+
+            </section>
+
+
+
+            <section class="files-section">
+
+
+                <!-- Section Header -->
+
+                <div class="section-header">
+
+
+                    <div>
+
+                        <h3>
+                            Files
+                        </h3>
+
+                        <p>
+                            Your uploaded files will appear here.
+                        </p>
+
+                    </div>
+
+
+                    <!-- Search -->
+
+                    <div class="search-container">
+
+                        <input
+                            type="search"
+                            id="searchInput"
+                            placeholder="Search files..."
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="file-table">
+
+
+                    <!-- Table Header -->
+
+                    <div class="table-header">
+
+                        <span>
+                            Name
+                        </span>
+
+                        <span>
+                            Type
+                        </span>
+
+                        <span>
+                            Size
+                        </span>
+
+                        <span>
+                            Action
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- Empty State -->
+
+                    <div
+                        class="empty-state"
+                        id="emptyState"
+                    >
+
+
+                        <div class="empty-icon">
+                            ▱
+                        </div>
+
+
+                        <h3>
+                            No files yet
+                        </h3>
+
+
+                        <p>
+                            Upload your first file to get started.
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+        </main>
+
+
+    </div>
+
+
+
+    <!-- JavaScript -->
+
+    <script
+        src="{{ url_for('static', filename='script.js') }}"
+    ></script>
+
+
+</body>
+
+</html>
