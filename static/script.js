@@ -1,11 +1,4 @@
-// ============================================================
-// FELIX FILE MANAGER
-// ============================================================
-
-
-// ============================================================
 // DOM ELEMENTS
-// ============================================================
 
 const uploadButton =
     document.getElementById("uploadButton");
@@ -74,9 +67,8 @@ const closeInfoButton =
     document.getElementById("closeInfoButton");
 
 
-// ============================================================
+
 // APPLICATION STATE
-// ============================================================
 
 let currentFolder = "";
 
@@ -85,9 +77,7 @@ let allFiles = [];
 let allFolders = [];
 
 
-// ============================================================
 // START APPLICATION
-// ============================================================
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -103,9 +93,8 @@ document.addEventListener(
 );
 
 
-// ============================================================
+
 // UPLOAD BUTTON
-// ============================================================
 
 uploadButton.addEventListener(
     "click",
@@ -117,9 +106,8 @@ uploadButton.addEventListener(
 );
 
 
-// ============================================================
+
 // FILE SELECTION
-// ============================================================
 
 fileInput.addEventListener(
     "change",
@@ -144,9 +132,8 @@ fileInput.addEventListener(
 );
 
 
-// ============================================================
+
 // UPLOAD FILE
-// ============================================================
 
 async function uploadFile(file) {
 
@@ -209,9 +196,8 @@ async function uploadFile(file) {
 }
 
 
-// ============================================================
+
 // LOAD FILES
-// ============================================================
 
 async function loadFiles() {
 
@@ -264,9 +250,7 @@ async function loadFiles() {
 }
 
 
-// ============================================================
 // DISPLAY FILES AND FOLDERS
-// ============================================================
 
 function displayItems() {
 
@@ -345,9 +329,7 @@ function displayItems() {
 }
 
 
-// ============================================================
 // CREATE FOLDER ELEMENT
-// ============================================================
 
 function createFolderElement(folder) {
 
@@ -450,9 +432,7 @@ function createFolderElement(folder) {
 }
 
 
-// ============================================================
 // CREATE FILE ELEMENT
-// ============================================================
 
 function createFileElement(file) {
 
@@ -585,9 +565,8 @@ function createFileElement(file) {
 }
 
 
-// ============================================================
 // CREATE ACTION BUTTON
-// ============================================================
+
 
 function createActionButton(
     text,
@@ -617,9 +596,9 @@ function createActionButton(
 }
 
 
-// ============================================================
+
 // OPEN FOLDER
-// ============================================================
+
 
 async function openFolder(path) {
 
@@ -631,9 +610,9 @@ async function openFolder(path) {
 }
 
 
-// ============================================================
+
 // HOME
-// ============================================================
+
 
 homeButton.addEventListener(
     "click",
@@ -648,9 +627,8 @@ homeButton.addEventListener(
 );
 
 
-// ============================================================
+
 // SEARCH
-// ============================================================
 
 searchInput.addEventListener(
     "input",
@@ -662,9 +640,9 @@ searchInput.addEventListener(
 );
 
 
-// ============================================================
+
 // NEW FOLDER
-// ============================================================
+
 
 newFolderButton.addEventListener(
     "click",
@@ -739,9 +717,8 @@ newFolderButton.addEventListener(
 );
 
 
-// ============================================================
+
 // PREVIEW FILE
-// ============================================================
 
 async function previewFile(file) {
 
@@ -876,9 +853,8 @@ async function previewFile(file) {
 }
 
 
-// ============================================================
+
 // CLOSE PREVIEW
-// ============================================================
 
 closePreviewButton.addEventListener(
     "click",
@@ -894,9 +870,8 @@ closePreviewButton.addEventListener(
 );
 
 
-// ============================================================
+
 // FILE INFORMATION
-// ============================================================
 
 function showFileInfo(file) {
 
@@ -960,9 +935,8 @@ function showFileInfo(file) {
 }
 
 
-// ============================================================
+
 // CLOSE INFORMATION
-// ============================================================
 
 closeInfoButton.addEventListener(
     "click",
@@ -976,9 +950,8 @@ closeInfoButton.addEventListener(
 );
 
 
-// ============================================================
+
 // DOWNLOAD
-// ============================================================
 
 function downloadFile(file) {
 
@@ -1005,9 +978,8 @@ function downloadFile(file) {
 }
 
 
-// ============================================================
+
 // RENAME
-// ============================================================
 
 async function renameItem(path) {
 
@@ -1085,9 +1057,8 @@ async function renameItem(path) {
 }
 
 
-// ============================================================
+
 // DELETE
-// ============================================================
 
 async function deleteItem(path) {
 
@@ -1163,9 +1134,8 @@ async function deleteItem(path) {
 }
 
 
-// ============================================================
+
 // STORAGE STATISTICS
-// ============================================================
 
 async function loadStorageStats() {
 
@@ -1216,9 +1186,7 @@ async function loadStorageStats() {
 }
 
 
-// ============================================================
 // BREADCRUMB
-// ============================================================
 
 function updateBreadcrumb() {
 
@@ -1292,9 +1260,8 @@ function updateBreadcrumb() {
 }
 
 
-// ============================================================
+
 // CURRENT FOLDER TITLE
-// ============================================================
 
 function updateCurrentFolderTitle() {
 
@@ -1318,9 +1285,8 @@ function updateCurrentFolderTitle() {
 }
 
 
-// ============================================================
+
 // FILE ICON
-// ============================================================
 
 function getFileIcon(extension) {
 
@@ -1365,9 +1331,8 @@ function getFileIcon(extension) {
 }
 
 
-// ============================================================
+
 // FORMAT FILE SIZE
-// ============================================================
 
 function formatBytes(bytes) {
 
@@ -1408,9 +1373,7 @@ function formatBytes(bytes) {
 }
 
 
-// ============================================================
 // NOTIFICATIONS
-// ============================================================
 
 function showNotification(
     message,
@@ -1437,9 +1400,7 @@ function showNotification(
 }
 
 
-// ============================================================
 // UPLOAD STATUS
-// ============================================================
 
 function showUploadStatus(message) {
 
@@ -1462,9 +1423,8 @@ function hideUploadStatus() {
 }
 
 
-// ============================================================
+
 // CLOSE MODALS WHEN CLICKING OUTSIDE
-// ============================================================
 
 window.addEventListener(
     "click",
