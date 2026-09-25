@@ -3,24 +3,28 @@ from flask import (
     render_template,
     request,
     jsonify,
-    send_from_directory
+    send_from_directory,
+    send_file
 )
 
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
 import os
+import shutil
+import mimetypes
 
 
 app = Flask(__name__)
 
 
-# File Storage Configuration
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 STORAGE_FOLDER = "storage"
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
-
 
 ALLOWED_EXTENSIONS = {
     "txt",
@@ -39,102 +43,273 @@ ALLOWED_EXTENSIONS = {
     "zip"
 }
 
-
-app.config["STORAGE_FOLDER"] = STORAGE_FOLDER
-
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
 
 
-# Create the storage folder if it does not exist
+# ============================================================
+# STORAGE SETUP
+# ============================================================
 
-os.makedirs(
-    STORAGE_FOLDER,
-    exist_ok=True
-)
+os.makedirs(STORAGE_FOLDER, exist_ok=True)
 
 
-# Check Allowed File Extension
-
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
 
 def allowed_file(filename):
-
     return (
         "." in filename
-        and filename.rsplit(
-            ".",
-            1
-        )[1].lower()
-        in ALLOWED_EXTENSIONS
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
 
+def safe_path(relative_path=""):
+    """
+    Makes sure the requested path stays inside storage/.
+    """
 
-# Home Page
+    base = os.path.abspath(STORAGE_FOLDER)
+
+    target = os.path.abspath(
+        os.path.join(STORAGE_FOLDER, relative_path)
+    )
+
+    if os.path.commonpath([base, target]) != base:
+        raise ValueError("Invalid file path")
+
+    return target
+
+
+def clean_relative_path(path):
+    """
+    Cleans a user-provided relative path.
+    """
+
+    if not path:
+        return ""
+
+    parts = path.replace("\\", "/").split("/")
+
+    cleaned = []
+
+    for part in parts:
+        if not part or part == ".":
+            continue
+
+        if part == "..":
+            raise ValueError("Invalid path")
+
+        cleaned.append(secure_filename(part))
+
+    return "/".join(part for part in cleaned if part)
+
+
+def get_file_info(full_path, relative_path):
+    """
+    Returns information about a file.
+    """
+
+    size = os.path.getsize(full_path)
+
+    filename = os.path.basename(full_path)
+
+    extension = ""
+
+    if "." in filename:
+        extension = filename.rsplit(".", 1)[1].lower()
+
+    mime_type, _ = mimetypes.guess_type(filename)
+
+    return {
+        "name": filename,
+        "path": relative_path.replace("\\", "/"),
+        "size": size,
+        "extension": extension,
+        "mime_type": mime_type or "application/octet-stream"
+    }
+
+
+# ============================================================
+# MAIN PAGE
+# ============================================================
 
 @app.route("/")
 def index():
+    return render_template("index.html")
 
-    return render_template(
-        "index.html"
+
+# ============================================================
+# LIST FILES AND FOLDERS
+# ============================================================
+
+@app.route("/api/files")
+def list_files():
+
+    folder = request.args.get("folder", "")
+
+    try:
+        folder = clean_relative_path(folder)
+        folder_path = safe_path(folder)
+
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "message": "Invalid folder path"
+        }), 400
+
+    if not os.path.isdir(folder_path):
+        return jsonify({
+            "success": False,
+            "message": "Folder does not exist"
+        }), 404
+
+    files = []
+    folders = []
+
+    for item in os.listdir(folder_path):
+
+        full_path = os.path.join(folder_path, item)
+
+        relative_path = os.path.relpath(
+            full_path,
+            STORAGE_FOLDER
+        ).replace("\\", "/")
+
+        if os.path.isdir(full_path):
+
+            folders.append({
+                "name": item,
+                "path": relative_path
+            })
+
+        else:
+
+            files.append(
+                get_file_info(
+                    full_path,
+                    relative_path
+                )
+            )
+
+    files.sort(
+        key=lambda x: x["name"].lower()
     )
 
+    folders.sort(
+        key=lambda x: x["name"].lower()
+    )
+
+    return jsonify({
+        "success": True,
+        "files": files,
+        "folders": folders,
+        "current_folder": folder
+    })
 
 
-# Upload File
+# ============================================================
+# STORAGE STATISTICS
+# ============================================================
+
+@app.route("/api/storage")
+def storage_stats():
+
+    total_size = 0
+    file_count = 0
+    folder_count = 0
+
+    for root, dirs, files in os.walk(STORAGE_FOLDER):
+
+        folder_count += len(dirs)
+
+        for filename in files:
+
+            full_path = os.path.join(
+                root,
+                filename
+            )
+
+            try:
+                total_size += os.path.getsize(
+                    full_path
+                )
+
+                file_count += 1
+
+            except OSError:
+                pass
+
+    return jsonify({
+        "success": True,
+        "file_count": file_count,
+        "folder_count": folder_count,
+        "total_size": total_size
+    })
 
 
-@app.route("/upload", methods=["POST"])
+# ============================================================
+# UPLOAD
+# ============================================================
+
+@app.route("/api/upload", methods=["POST"])
 def upload_file():
 
-    if "file" not in request.files:
+    uploaded_file = request.files.get("file")
+
+    if not uploaded_file:
+        return jsonify({
+            "success": False,
+            "message": "No file was uploaded"
+        }), 400
+
+    if not uploaded_file.filename:
+        return jsonify({
+            "success": False,
+            "message": "Please select a file"
+        }), 400
+
+    if not allowed_file(uploaded_file.filename):
 
         return jsonify({
             "success": False,
-            "message": "No file was provided."
+            "message": "This file type is not allowed"
         }), 400
 
-
-    file = request.files["file"]
-
-
-    if file.filename == "":
-
-        return jsonify({
-            "success": False,
-            "message": "No file was selected."
-        }), 400
-
-
-    filename = secure_filename(
-        file.filename
+    folder = request.form.get(
+        "folder",
+        ""
     )
 
+    try:
 
-    if not filename:
+        folder = clean_relative_path(folder)
 
-        return jsonify({
-            "success": False,
-            "message": "Invalid filename."
-        }), 400
+        folder_path = safe_path(folder)
 
-
-    if not allowed_file(filename):
+    except ValueError:
 
         return jsonify({
             "success": False,
-            "message": "This file type is not allowed."
+            "message": "Invalid folder path"
         }), 400
 
+    os.makedirs(
+        folder_path,
+        exist_ok=True
+    )
 
-    file_path = os.path.join(
-        app.config["STORAGE_FOLDER"],
+    filename = secure_filename(
+        uploaded_file.filename
+    )
+
+    destination = os.path.join(
+        folder_path,
         filename
     )
 
-
-    # Prevent Duplicate Filenames
-
-    if os.path.exists(file_path):
+    # Prevent accidental overwriting
+    if os.path.exists(destination):
 
         name, extension = os.path.splitext(
             filename
@@ -142,247 +317,348 @@ def upload_file():
 
         counter = 1
 
-
-        while os.path.exists(file_path):
+        while os.path.exists(destination):
 
             new_filename = (
-                f"{name}_{counter}{extension}"
+                f"{name} ({counter}){extension}"
             )
 
-            file_path = os.path.join(
-                app.config["STORAGE_FOLDER"],
+            destination = os.path.join(
+                folder_path,
                 new_filename
             )
 
             counter += 1
 
-
         filename = new_filename
 
-
-    file.save(file_path)
-
+    uploaded_file.save(destination)
 
     return jsonify({
         "success": True,
-        "message": "File uploaded successfully.",
+        "message": "File uploaded successfully",
         "filename": filename
     })
 
 
-# Get All Files
+# ============================================================
+# DOWNLOAD
+# ============================================================
 
-@app.route("/api/files", methods=["GET"])
-def get_files():
+@app.route("/api/download/<path:filename>")
+def download_file(filename):
 
-    files = []
+    try:
 
+        filename = clean_relative_path(filename)
 
-    for filename in os.listdir(
-        STORAGE_FOLDER
-    ):
+        full_path = safe_path(filename)
 
-        file_path = os.path.join(
-            STORAGE_FOLDER,
-            filename
-        )
+    except ValueError:
 
+        return jsonify({
+            "success": False,
+            "message": "Invalid file path"
+        }), 400
 
-        if os.path.isfile(file_path):
+    if not os.path.isfile(full_path):
 
-            file_size = os.path.getsize(
-                file_path
-            )
+        return jsonify({
+            "success": False,
+            "message": "File not found"
+        }), 404
 
+    directory = os.path.dirname(full_path)
 
-            files.append({
-                "name": filename,
-                "size": file_size
-            })
+    file_name = os.path.basename(full_path)
 
-
-    return jsonify(files)
-
-
-# Get Storage Statistics
-
-@app.route("/api/storage", methods=["GET"])
-def get_storage_stats():
-
-    file_count = 0
-
-    total_size = 0
+    return send_from_directory(
+        directory,
+        file_name,
+        as_attachment=True
+    )
 
 
-    for filename in os.listdir(
-        STORAGE_FOLDER
-    ):
+# ============================================================
+# PREVIEW
+# ============================================================
 
-        file_path = os.path.join(
-            STORAGE_FOLDER,
-            filename
-        )
+@app.route("/api/preview/<path:filename>")
+def preview_file(filename):
+
+    try:
+
+        filename = clean_relative_path(filename)
+
+        full_path = safe_path(filename)
+
+    except ValueError:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid file path"
+        }), 400
+
+    if not os.path.isfile(full_path):
+
+        return jsonify({
+            "success": False,
+            "message": "File not found"
+        }), 404
+
+    mime_type, _ = mimetypes.guess_type(
+        full_path
+    )
+
+    if not mime_type:
+        mime_type = "application/octet-stream"
+
+    return send_file(
+        full_path,
+        mimetype=mime_type,
+        as_attachment=False
+    )
 
 
-        if os.path.isfile(file_path):
-
-            file_count += 1
-
-            total_size += os.path.getsize(
-                file_path
-            )
-
-
-    return jsonify({
-        "file_count": file_count,
-        "total_size": total_size
-    })
-
-
-# Create Folder
+# ============================================================
+# CREATE FOLDER
+# ============================================================
 
 @app.route("/api/folders", methods=["POST"])
 def create_folder():
 
-    data = request.get_json()
+    data = request.get_json(
+        silent=True
+    ) or {}
 
-    if not data:
+    folder_name = data.get(
+        "name",
+        ""
+    ).strip()
 
-        return jsonify({
-            "success": False,
-            "message": "No folder data was provided." 
-        }), 400
-
-    folder_name = data.get("name", "").strip()
-
-
-    if not folder_name:
-
-        return jsonify({
-            "success": False,
-            "message": "Folder name is required."
-        }), 400
-
-    folder_name = secure_filename(folder_name)
+    parent = data.get(
+        "parent",
+        ""
+    )
 
     if not folder_name:
 
         return jsonify({
             "success": False,
-            "message": "Invalid folder name."
+            "message": "Folder name is required"
         }), 400
 
-    folder_path = os.path.join( STORAGE_FOLDER, folder_name)
+    folder_name = secure_filename(
+        folder_name
+    )
 
+    if not folder_name:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid folder name"
+        }), 400
+
+    try:
+
+        parent = clean_relative_path(
+            parent
+        )
+
+        parent_path = safe_path(parent)
+
+        folder_path = os.path.join(
+            parent_path,
+            folder_name
+        )
+
+    except ValueError:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid folder path"
+        }), 400
 
     if os.path.exists(folder_path):
 
         return jsonify({
             "success": False,
-            "message": "A file or folder with this name already exists."
+            "message": "A file or folder with that name already exists"
         }), 409
 
     os.makedirs(folder_path)
 
     return jsonify({
         "success": True,
-        "message": "Folder created successfully.",
-        "folder":folder_name
+        "message": "Folder created successfully"
     })
 
 
-# Download File
+# ============================================================
+# RENAME
+# ============================================================
 
+@app.route("/api/rename", methods=["POST"])
+def rename_item():
 
-@app.route(
-    "/download/<path:filename>"
-)
-def download_file(filename):
+    data = request.get_json(
+        silent=True
+    ) or {}
 
-    safe_filename = secure_filename(
-        filename
+    old_path = data.get(
+        "old_path",
+        ""
     )
 
+    new_name = data.get(
+        "new_name",
+        ""
+    ).strip()
 
-    if not safe_filename:
+    if not old_path or not new_name:
 
         return jsonify({
             "success": False,
-            "message": "Invalid filename."
+            "message": "Missing rename information"
         }), 400
 
+    try:
 
-    file_path = os.path.join(
-        app.config["STORAGE_FOLDER"],
-        safe_filename
-    )
+        old_path = clean_relative_path(
+            old_path
+        )
 
+        old_full_path = safe_path(
+            old_path
+        )
 
-    if not os.path.isfile(file_path):
+        new_name = secure_filename(
+            new_name
+        )
+
+        if not new_name:
+
+            raise ValueError(
+                "Invalid name"
+            )
+
+        parent = os.path.dirname(
+            old_full_path
+        )
+
+        new_full_path = os.path.join(
+            parent,
+            new_name
+        )
+
+        safe_path(
+            os.path.relpath(
+                new_full_path,
+                STORAGE_FOLDER
+            )
+        )
+
+    except ValueError:
 
         return jsonify({
             "success": False,
-            "message": "File not found."
-        }), 404
-
-
-    return send_from_directory(
-        app.config["STORAGE_FOLDER"],
-        safe_filename,
-        as_attachment=True
-    )
-
-
-# Delete File
-
-@app.route(
-    "/api/files/<path:filename>",
-    methods=["DELETE"]
-)
-def delete_file(filename):
-
-    safe_filename = secure_filename(
-        filename
-    )
-
-
-    if not safe_filename:
-
-        return jsonify({
-            "success": False,
-            "message": "Invalid filename."
+            "message": "Invalid path or name"
         }), 400
 
-
-    file_path = os.path.join(
-        app.config["STORAGE_FOLDER"],
-        safe_filename
-    )
-
-
-    if not os.path.isfile(file_path):
+    if not os.path.exists(old_full_path):
 
         return jsonify({
             "success": False,
-            "message": "File not found."
+            "message": "Item does not exist"
         }), 404
 
+    if os.path.exists(new_full_path):
 
-    os.remove(file_path)
+        return jsonify({
+            "success": False,
+            "message": "An item with that name already exists"
+        }), 409
 
+    os.rename(
+        old_full_path,
+        new_full_path
+    )
 
     return jsonify({
         "success": True,
-        "message": "File deleted successfully."
+        "message": "Renamed successfully"
     })
 
 
+# ============================================================
+# DELETE
+# ============================================================
 
-# Handle Oversized Uploads
+@app.route("/api/delete", methods=["POST"])
+def delete_item():
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    relative_path = data.get(
+        "path",
+        ""
+    )
+
+    if not relative_path:
+
+        return jsonify({
+            "success": False,
+            "message": "File or folder path is required"
+        }), 400
+
+    try:
+
+        relative_path = clean_relative_path(
+            relative_path
+        )
+
+        full_path = safe_path(
+            relative_path
+        )
+
+    except ValueError:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid path"
+        }), 400
+
+    if not os.path.exists(full_path):
+
+        return jsonify({
+            "success": False,
+            "message": "Item not found"
+        }), 404
+
+    if os.path.isdir(full_path):
+
+        shutil.rmtree(full_path)
+
+    else:
+
+        os.remove(full_path)
+
+    return jsonify({
+        "success": True,
+        "message": "Deleted successfully"
+    })
 
 
-@app.errorhandler(RequestEntityTooLarge)
-def handle_file_too_large(error):
+# ============================================================
+# ERROR HANDLERS
+# ============================================================
+
+@app.errorhandler(
+    RequestEntityTooLarge
+)
+def file_too_large(error):
 
     return jsonify({
         "success": False,
@@ -390,10 +666,30 @@ def handle_file_too_large(error):
     }), 413
 
 
+@app.errorhandler(404)
+def page_not_found(error):
 
-# Run Application
+    return jsonify({
+        "success": False,
+        "message": "Resource not found"
+    }), 404
 
+
+@app.errorhandler(500)
+def internal_error(error):
+
+    return jsonify({
+        "success": False,
+        "message": "An internal server error occurred"
+    }), 500
+
+
+# ============================================================
+# RUN APPLICATION
+# ============================================================
 
 if __name__ == "__main__":
 
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )

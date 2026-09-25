@@ -19,443 +19,259 @@
 
 </head>
 
-
 <body>
 
-    <!-- Notification -->
+    <header class="topbar">
 
-    <div
-        class="notification"
-        id="notification"
-        role="status"
-        aria-live="polite"
-    ></div>
+        <div>
 
+            <h1>Felix File Manager</h1>
 
-    <div class="app">
+            <p>Manage your files and folders</p>
 
+        </div>
 
-        <aside class="sidebar">
+    </header>
 
 
-            <!-- Brand -->
+    <main class="container">
 
-            <div class="brand">
 
-                <div class="brand-logo">
-                    F
-                </div>
+        <!-- ACTION AREA -->
 
-                <div>
+        <section class="action-area">
 
-                    <h1>
-                        Felix
-                    </h1>
+            <button
+                id="uploadButton"
+                class="primary-button"
+            >
+                Upload File
+            </button>
 
-                    <span>
-                        File Manager
-                    </span>
+            <button
+                id="newFolderButton"
+                class="secondary-button"
+            >
+                New Folder
+            </button>
 
-                </div>
+            <input
+                type="file"
+                id="fileInput"
+                hidden
+            >
+
+        </section>
+
+
+        <!-- SEARCH -->
+
+        <section class="search-area">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search files..."
+                autocomplete="off"
+            >
+
+        </section>
+
+
+        <!-- STORAGE STATISTICS -->
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    Files
+                </span>
+
+                <strong id="fileCount">
+                    0
+                </strong>
 
             </div>
 
 
-            <!-- Navigation -->
+            <div class="stat-card">
 
-            <nav class="navigation">
+                <span class="stat-label">
+                    Folders
+                </span>
 
+                <strong id="folderCount">
+                    0
+                </strong>
 
-                <a
-                    href="#"
-                    class="nav-link active"
-                >
-
-                    <span class="nav-icon">
-                        ⌂
-                    </span>
-
-                    <span>
-                        Dashboard
-                    </span>
-
-                </a>
+            </div>
 
 
-                <a
-                    href="#"
-                    class="nav-link"
-                >
+            <div class="stat-card">
 
-                    <span class="nav-icon">
-                        ▣
-                    </span>
+                <span class="stat-label">
+                    Storage Used
+                </span>
 
-                    <span>
-                        My Files
-                    </span>
+                <strong id="storageUsed">
+                    0 B
+                </strong>
 
-                </a>
+            </div>
 
-
-                <a
-                    href="#"
-                    class="nav-link"
-                >
-
-                    <span class="nav-icon">
-                        ◷
-                    </span>
-
-                    <span>
-                        Recent
-                    </span>
-
-                </a>
+        </section>
 
 
-                <a
-                    href="#"
-                    class="nav-link"
-                >
+        <!-- BREADCRUMB -->
 
-                    <span class="nav-icon">
-                        ◫
-                    </span>
+        <section class="breadcrumb-area">
 
-                    <span>
-                        Storage
-                    </span>
+            <button
+                id="homeButton"
+                class="breadcrumb-button"
+            >
+                Home
+            </button>
 
-                </a>
+            <span id="breadcrumb">
+                /
+            </span>
 
-
-                <a
-                    href="#"
-                    class="nav-link"
-                >
-
-                    <span class="nav-icon">
-                        ⚙
-                    </span>
-
-                    <span>
-                        Settings
-                    </span>
-
-                </a>
+        </section>
 
 
-            </nav>
+        <!-- UPLOAD STATUS -->
+
+        <div
+            id="uploadStatus"
+            class="upload-status hidden"
+        ></div>
 
 
-            <!-- Sidebar Footer -->
+        <!-- FILE MANAGER -->
 
-            <div class="sidebar-footer">
+        <section class="file-manager">
 
-                <p>
-                    Felix File Manager
-                </p>
+            <div class="manager-header">
 
-                <span>
-                    Version 1.0
+                <h2 id="currentFolderTitle">
+                    Files
+                </h2>
+
+                <span id="itemCount">
+                    0 items
                 </span>
 
             </div>
 
 
-        </aside>
+            <div
+                id="emptyState"
+                class="empty-state"
+            >
 
+                <h3>No files yet</h3>
 
+                <p>
+                    Upload a file or create a folder to get started.
+                </p>
 
-        <main class="main-content">
+            </div>
 
 
-            <!-- Top Bar -->
+            <div
+                id="fileList"
+                class="file-list"
+            ></div>
 
-            <header class="top-bar">
+        </section>
 
 
-                <div>
+    </main>
 
-                    <p class="welcome-text">
-                        Welcome back
-                    </p>
 
-                    <h2>
-                        My Files
-                    </h2>
+    <!-- PREVIEW MODAL -->
 
-                </div>
+    <div
+        id="previewModal"
+        class="modal hidden"
+    >
 
+        <div class="modal-content">
 
-                <div class="status">
+            <div class="modal-header">
 
-                    <span class="status-dot"></span>
+                <h2 id="previewTitle">
+                    Preview
+                </h2>
 
-                    <span>
-                        System Online
-                    </span>
-
-                </div>
-
-
-            </header>
-
-
-
-            <section class="page-introduction">
-
-
-                <div>
-
-                    <h3>
-                        Manage your files
-                    </h3>
-
-                    <p>
-                        Upload, organise, search and manage your files
-                        from one simple workspace.
-                    </p>
-
-                </div>
-
-
-            </section>
-
-
-
-            <section class="stats-section">
-
-
-                <!-- Total Files -->
-
-                <div class="stat-card">
-
-
-                    <div class="stat-icon">
-                        ▣
-                    </div>
-
-
-                    <div>
-
-                        <span class="stat-label">
-                            Total Files
-                        </span>
-
-
-                        <strong id="totalFiles">
-                            0
-                        </strong>
-
-                    </div>
-
-
-                </div>
-
-
-
-                <!-- Storage Used -->
-
-                <div class="stat-card">
-
-
-                    <div class="stat-icon">
-                        ◫
-                    </div>
-
-
-                    <div>
-
-                        <span class="stat-label">
-                            Storage Used
-                        </span>
-
-
-                        <strong id="storageUsed">
-                            0 Bytes
-                        </strong>
-
-                    </div>
-
-
-                </div>
-
-
-            </section>
-
-
-
-            <section class="upload-section">
-
-
-                <div
-                    class="upload-card"
-                    id="uploadCard"
+                <button
+                    id="closePreviewButton"
+                    class="close-button"
                 >
+                    ×
+                </button>
 
+            </div>
 
-                    <div class="upload-icon">
-                        ↑
-                    </div>
 
+            <div
+                id="previewBody"
+                class="preview-body"
+            ></div>
 
-                    <h3>
-                        Upload your files
-                    </h3>
-
-
-                    <p>
-                        Drag and drop your files here or choose files
-                        from your computer.
-                    </p>
-
-
-                    <button
-                        type="button"
-                        class="upload-button"
-                        id="uploadButton"
-                    >
-                        Choose Files
-                    </button>
-
-
-                    <input
-                        type="file"
-                        id="fileInput"
-                        hidden
-                        multiple
-                    >
-
-
-                    <small>
-
-                        Maximum 10 MB per file.
-
-                        PDF, DOC, DOCX, XLS, XLSX, CSV,
-                        PPT, PPTX, JPG, PNG, GIF, TXT and ZIP supported.
-
-                    </small>
-
-
-                </div>
-
-
-            </section>
-
-
-
-            <section class="files-section">
-
-
-                <!-- Section Header -->
-
-                <div class="section-header">
-
-
-                    <div>
-
-                        <h3>
-                            Files
-                        </h3>
-
-                        <p>
-                            Your uploaded files will appear here.
-                        </p>
-
-                    </div>
-
-
-                    <!-- Search -->
-
-                    <div class="search-container">
-
-                        <input
-                            type="search"
-                            id="searchInput"
-                            placeholder="Search files..."
-                        >
-
-                    </div>
-
-
-                </div>
-
-
-
-                <div class="file-table">
-
-
-                    <!-- Table Header -->
-
-                    <div class="table-header">
-
-                        <span>
-                            Name
-                        </span>
-
-                        <span>
-                            Type
-                        </span>
-
-                        <span>
-                            Size
-                        </span>
-
-                        <span>
-                            Action
-                        </span>
-
-                    </div>
-
-
-
-                    <!-- Empty State -->
-
-                    <div
-                        class="empty-state"
-                        id="emptyState"
-                    >
-
-
-                        <div class="empty-icon">
-                            ▱
-                        </div>
-
-
-                        <h3>
-                            No files yet
-                        </h3>
-
-
-                        <p>
-                            Upload your first file to get started.
-                        </p>
-
-
-                    </div>
-
-
-                </div>
-
-
-            </section>
-
-
-        </main>
-
+        </div>
 
     </div>
 
 
+    <!-- INFORMATION MODAL -->
 
-    <!-- JavaScript -->
+    <div
+        id="infoModal"
+        class="modal hidden"
+    >
+
+        <div class="modal-content small-modal">
+
+            <div class="modal-header">
+
+                <h2>
+                    File Information
+                </h2>
+
+                <button
+                    id="closeInfoButton"
+                    class="close-button"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                id="infoBody"
+                class="info-body"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- NOTIFICATION -->
+
+    <div
+        id="notification"
+        class="notification hidden"
+    ></div>
+
 
     <script
         src="{{ url_for('static', filename='script.js') }}"
     ></script>
-
 
 </body>
 

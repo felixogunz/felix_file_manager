@@ -1,125 +1,115 @@
+// ============================================================
+// FELIX FILE MANAGER
+// ============================================================
+
+
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
+
 const uploadButton =
     document.getElementById("uploadButton");
 
 const fileInput =
     document.getElementById("fileInput");
 
-const uploadCard =
-    document.getElementById("uploadCard");
-
-const emptyState =
-    document.getElementById("emptyState");
+const newFolderButton =
+    document.getElementById("newFolderButton");
 
 const searchInput =
     document.getElementById("searchInput");
 
-const notification =
-    document.getElementById("notification");
+const fileList =
+    document.getElementById("fileList");
 
-const totalFiles =
-    document.getElementById("totalFiles");
+const emptyState =
+    document.getElementById("emptyState");
+
+const fileCount =
+    document.getElementById("fileCount");
+
+const folderCount =
+    document.getElementById("folderCount");
 
 const storageUsed =
     document.getElementById("storageUsed");
 
+const itemCount =
+    document.getElementById("itemCount");
 
-/* 
-   LOAD STORAGE STATISTICS
-*/
+const breadcrumb =
+    document.getElementById("breadcrumb");
 
-async function loadStorageStats() {
+const currentFolderTitle =
+    document.getElementById("currentFolderTitle");
 
-    try {
+const homeButton =
+    document.getElementById("homeButton");
 
-        const response =
-            await fetch("/api/storage");
+const notification =
+    document.getElementById("notification");
 
+const uploadStatus =
+    document.getElementById("uploadStatus");
 
-        const stats =
-            await response.json();
+const previewModal =
+    document.getElementById("previewModal");
 
+const previewTitle =
+    document.getElementById("previewTitle");
 
-        totalFiles.textContent =
-            stats.file_count;
+const previewBody =
+    document.getElementById("previewBody");
 
+const closePreviewButton =
+    document.getElementById("closePreviewButton");
 
-        storageUsed.textContent =
-            formatFileSize(
-                stats.total_size
-            );
+const infoModal =
+    document.getElementById("infoModal");
 
+const infoBody =
+    document.getElementById("infoBody");
 
-    } catch (error) {
-
-        console.error(
-            "Could not load storage statistics:",
-            error
-        );
-
-    }
-
-}
-
-
-/* 
-   SHOW NOTIFICATION
-*/
-
-function showNotification(
-    message,
-    type = "success"
-) {
-
-    notification.textContent =
-        message;
+const closeInfoButton =
+    document.getElementById("closeInfoButton");
 
 
-    notification.className =
-        "notification";
+// ============================================================
+// APPLICATION STATE
+// ============================================================
+
+let currentFolder = "";
+
+let allFiles = [];
+
+let allFolders = [];
 
 
-    notification.classList.add(
-        type
-    );
+// ============================================================
+// START APPLICATION
+// ============================================================
 
-
-    notification.classList.add(
-        "show"
-    );
-
-
-    setTimeout(function () {
-
-        notification.classList.remove(
-            "show"
-        );
-
-    }, 3000);
-
-}
-
-
-/* 
-   SEARCH FILES
-*/
-
-searchInput.addEventListener(
-    "input",
-    function () {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
         loadFiles();
+
+        loadStorageStats();
+
+        updateBreadcrumb();
 
     }
 );
 
 
-/* 
-   OPEN FILE SELECTOR
-*/
+// ============================================================
+// UPLOAD BUTTON
+// ============================================================
 
 uploadButton.addEventListener(
     "click",
-    function () {
+    () => {
 
         fileInput.click();
 
@@ -127,241 +117,146 @@ uploadButton.addEventListener(
 );
 
 
-/* 
-   HANDLE SELECTED FILES
-*/
+// ============================================================
+// FILE SELECTION
+// ============================================================
 
 fileInput.addEventListener(
     "change",
-    function () {
+    async () => {
 
-        const selectedFiles =
-            fileInput.files;
+        const files =
+            Array.from(fileInput.files);
 
+        for (const file of files) {
 
-        uploadFiles(
-            selectedFiles
-        );
-
-    }
-);
-
-
-/* 
-   DRAG OVER
-*/
-
-uploadCard.addEventListener(
-    "dragover",
-    function (event) {
-
-        event.preventDefault();
-
-        uploadCard.classList.add(
-            "drag-over"
-        );
-
-    }
-);
-
-
-/* 
-   DRAG LEAVE
-*/
-
-uploadCard.addEventListener(
-    "dragleave",
-    function () {
-
-        uploadCard.classList.remove(
-            "drag-over"
-        );
-
-    }
-);
-
-
-/* 
-   DROP FILES
-*/
-
-uploadCard.addEventListener(
-    "drop",
-    function (event) {
-
-        event.preventDefault();
-
-
-        uploadCard.classList.remove(
-            "drag-over"
-        );
-
-
-        const droppedFiles =
-            event.dataTransfer.files;
-
-
-        uploadFiles(
-            droppedFiles
-        );
-
-    }
-);
-
-
-/* 
-   UPLOAD FILES
-*/
-
-async function uploadFiles(files) {
-
-    if (!files || files.length === 0) {
-
-        return;
-
-    }
-
-
-    uploadButton.disabled = true;
-
-    uploadButton.textContent =
-        "Uploading...";
-
-
-    for (const file of files) {
-
-        console.log(
-            "Uploading:",
-            file.name
-        );
-
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "file",
-            file
-        );
-
-
-        try {
-
-            const response =
-                await fetch(
-                    "/upload",
-                    {
-                        method: "POST",
-                        body: formData
-                    }
-                );
-
-
-            const result =
-                await response.json();
-
-
-            if (result.success) {
-
-                showNotification(
-                    `${result.filename} uploaded successfully.`,
-                    "success"
-                );
-
-
-            } else {
-
-                showNotification(
-                    result.message,
-                    "error"
-                );
-
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "Upload error:",
-                error
-            );
-
-
-            showNotification(
-                "Upload failed. Please try again.",
-                "error"
-            );
+            await uploadFile(file);
 
         }
 
+        fileInput.value = "";
+
+        await loadFiles();
+
+        await loadStorageStats();
+
     }
+);
 
 
-    await loadFiles();
+// ============================================================
+// UPLOAD FILE
+// ============================================================
 
-    await loadStorageStats();
+async function uploadFile(file) {
 
+    const formData =
+        new FormData();
 
-    uploadButton.disabled =
-        false;
+    formData.append(
+        "file",
+        file
+    );
 
+    formData.append(
+        "folder",
+        currentFolder
+    );
 
-    uploadButton.textContent =
-        "Choose Files";
-
-
-    fileInput.value = "";
-
-}
-
-
-/* 
-   LOAD FILES FROM FLASK
- */
-
-async function loadFiles() {
+    showUploadStatus(
+        `Uploading ${file.name}...`
+    );
 
     try {
 
         const response =
             await fetch(
-                "/api/files"
-            );
-
-
-        const files =
-            await response.json();
-
-
-        const searchTerm =
-            searchInput.value
-                .trim()
-                .toLowerCase();
-
-
-        const filteredFiles =
-            files.filter(
-                function (file) {
-
-                    return file.name
-                        .toLowerCase()
-                        .includes(searchTerm);
-
+                "/api/upload",
+                {
+                    method: "POST",
+                    body: formData
                 }
             );
 
+        const data =
+            await response.json();
 
-        displayFiles(
-            filteredFiles
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Upload failed"
+            );
+
+        }
+
+        showNotification(
+            `${file.name} uploaded successfully.`,
+            "success"
         );
-
 
     } catch (error) {
 
-        console.error(
-            "Could not load files:",
-            error
+        showNotification(
+            error.message,
+            "error"
+        );
+
+    }
+
+    hideUploadStatus();
+
+}
+
+
+// ============================================================
+// LOAD FILES
+// ============================================================
+
+async function loadFiles() {
+
+    try {
+
+        const url =
+            currentFolder
+                ? `/api/files?folder=${encodeURIComponent(currentFolder)}`
+                : "/api/files";
+
+        const response =
+            await fetch(url);
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load files"
+            );
+
+        }
+
+        allFiles =
+            data.files || [];
+
+        allFolders =
+            data.folders || [];
+
+        currentFolder =
+            data.current_folder || "";
+
+        displayItems();
+
+        updateBreadcrumb();
+
+        updateCurrentFolderTitle();
+
+    } catch (error) {
+
+        showNotification(
+            error.message,
+            "error"
         );
 
     }
@@ -369,149 +264,79 @@ async function loadFiles() {
 }
 
 
-/* 
-   DISPLAY FILES
-*/
+// ============================================================
+// DISPLAY FILES AND FOLDERS
+// ============================================================
 
-function displayFiles(files) {
+function displayItems() {
 
-    const fileTable =
-        document.querySelector(
-            ".file-table"
+    fileList.replaceChildren();
+
+    const searchTerm =
+        searchInput.value
+            .trim()
+            .toLowerCase();
+
+
+    const filteredFolders =
+        allFolders.filter(
+            folder =>
+                folder.name
+                    .toLowerCase()
+                    .includes(searchTerm)
         );
 
 
-    /* Remove existing file rows */
-
-    document
-        .querySelectorAll(".file-row")
-        .forEach(function (row) {
-
-            row.remove();
-
-        });
+    const filteredFiles =
+        allFiles.filter(
+            file =>
+                file.name
+                    .toLowerCase()
+                    .includes(searchTerm)
+        );
 
 
-    /* Show empty state */
-
-    if (files.length === 0) {
-
-        emptyState.style.display =
-            "block";
+    const totalItems =
+        filteredFolders.length +
+        filteredFiles.length;
 
 
-        if (
-            searchInput.value
-                .trim() !== ""
-        ) {
-
-            emptyState
-                .querySelector("h3")
-                .textContent =
-                "No matching files";
+    itemCount.textContent =
+        `${totalItems} item${totalItems === 1 ? "" : "s"}`;
 
 
-            emptyState
-                .querySelector("p")
-                .textContent =
-                "Try a different search term.";
+    if (totalItems === 0) {
 
-        } else {
-
-            emptyState
-                .querySelector("h3")
-                .textContent =
-                "No files yet";
-
-
-            emptyState
-                .querySelector("p")
-                .textContent =
-                "Upload your first file to get started.";
-
-        }
-
+        emptyState.classList.remove(
+            "hidden"
+        );
 
         return;
 
     }
 
 
-    /* Hide empty state */
-
-    emptyState.style.display =
-        "none";
-
-
-    /* Create a row for every file */
-
-    files.forEach(
-        function (file) {
-
-            const row =
-                document.createElement(
-                    "div"
-                );
+    emptyState.classList.add(
+        "hidden"
+    );
 
 
-            row.classList.add(
-                "file-row"
+    filteredFolders.forEach(
+        folder => {
+
+            fileList.appendChild(
+                createFolderElement(folder)
             );
 
-
-            row.innerHTML = `
-                <span class="file-name">
-                    ${file.name}
-                </span>
-
-                <span>
-                    ${getFileType(file.name)}
-                </span>
-
-                <span>
-                    ${formatFileSize(file.size)}
-                </span>
-
-                <span class="action-group">
-
-                    <a
-                        class="action-button"
-                        href="/download/${encodeURIComponent(file.name)}"
-                    >
-                        Download
-                    </a>
-
-                    <button
-                        class="action-button delete-button"
-                        type="button"
-                    >
-                        Delete
-                    </button>
-
-                </span>
-            `;
+        }
+    );
 
 
-            const deleteButton =
-                row.querySelector(
-                    ".delete-button"
-                );
+    filteredFiles.forEach(
+        file => {
 
-
-            deleteButton.addEventListener(
-                "click",
-                function () {
-
-                    deleteFile(
-                        file.name
-                    );
-
-                }
-            );
-
-
-            fileTable.appendChild(
-                row
+            fileList.appendChild(
+                createFileElement(file)
             );
 
         }
@@ -520,49 +345,1039 @@ function displayFiles(files) {
 }
 
 
-/* 
-   GET FILE TYPE
-*/
+// ============================================================
+// CREATE FOLDER ELEMENT
+// ============================================================
 
-function getFileType(filename) {
+function createFolderElement(folder) {
 
-    const extension =
-        filename
-            .split(".")
-            .pop()
-            .toUpperCase();
+    const element =
+        document.createElement("div");
 
-
-    if (
-        extension ===
-        filename.toUpperCase()
-    ) {
-
-        return "File";
-
-    }
+    element.className =
+        "file-item folder-item";
 
 
-    return extension;
+    const icon =
+        document.createElement("div");
+
+    icon.className =
+        "item-icon";
+
+    icon.textContent =
+        "📁";
+
+
+    const details =
+        document.createElement("div");
+
+    details.className =
+        "item-details";
+
+
+    const name =
+        document.createElement("div");
+
+    name.className =
+        "item-name";
+
+    name.textContent =
+        folder.name;
+
+
+    const type =
+        document.createElement("div");
+
+    type.className =
+        "item-meta";
+
+    type.textContent =
+        "Folder";
+
+
+    details.appendChild(name);
+
+    details.appendChild(type);
+
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "item-actions";
+
+
+    const openButton =
+        createActionButton(
+            "Open",
+            "action-button",
+            () => openFolder(folder.path)
+        );
+
+
+    const renameButton =
+        createActionButton(
+            "Rename",
+            "action-button",
+            () => renameItem(folder.path)
+        );
+
+
+    const deleteButton =
+        createActionButton(
+            "Delete",
+            "danger-button",
+            () => deleteItem(folder.path)
+        );
+
+
+    actions.appendChild(openButton);
+
+    actions.appendChild(renameButton);
+
+    actions.appendChild(deleteButton);
+
+
+    element.appendChild(icon);
+
+    element.appendChild(details);
+
+    element.appendChild(actions);
+
+
+    return element;
 
 }
 
 
-/* 
-   FORMAT FILE SIZE
-*/
+// ============================================================
+// CREATE FILE ELEMENT
+// ============================================================
 
-function formatFileSize(bytes) {
+function createFileElement(file) {
 
-    if (bytes === 0) {
+    const element =
+        document.createElement("div");
 
-        return "0 Bytes";
+    element.className =
+        "file-item";
+
+
+    const icon =
+        document.createElement("div");
+
+    icon.className =
+        "item-icon";
+
+    icon.textContent =
+        getFileIcon(file.extension);
+
+
+    const details =
+        document.createElement("div");
+
+    details.className =
+        "item-details";
+
+
+    const name =
+        document.createElement("div");
+
+    name.className =
+        "item-name";
+
+    name.textContent =
+        file.name;
+
+
+    const meta =
+        document.createElement("div");
+
+    meta.className =
+        "item-meta";
+
+    meta.textContent =
+        `${file.extension.toUpperCase() || "FILE"} • ${formatBytes(file.size)}`;
+
+
+    details.appendChild(name);
+
+    details.appendChild(meta);
+
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "item-actions";
+
+
+    const previewButton =
+        createActionButton(
+            "Preview",
+            "action-button",
+            () => previewFile(file)
+        );
+
+
+    const infoButton =
+        createActionButton(
+            "Info",
+            "action-button",
+            () => showFileInfo(file)
+        );
+
+
+    const downloadButton =
+        createActionButton(
+            "Download",
+            "action-button",
+            () => downloadFile(file)
+        );
+
+
+    const renameButton =
+        createActionButton(
+            "Rename",
+            "action-button",
+            () => renameItem(file.path)
+        );
+
+
+    const deleteButton =
+        createActionButton(
+            "Delete",
+            "danger-button",
+            () => deleteItem(file.path)
+        );
+
+
+    actions.appendChild(
+        previewButton
+    );
+
+    actions.appendChild(
+        infoButton
+    );
+
+    actions.appendChild(
+        downloadButton
+    );
+
+    actions.appendChild(
+        renameButton
+    );
+
+    actions.appendChild(
+        deleteButton
+    );
+
+
+    element.appendChild(icon);
+
+    element.appendChild(details);
+
+    element.appendChild(actions);
+
+
+    return element;
+
+}
+
+
+// ============================================================
+// CREATE ACTION BUTTON
+// ============================================================
+
+function createActionButton(
+    text,
+    className,
+    callback
+) {
+
+    const button =
+        document.createElement("button");
+
+    button.type =
+        "button";
+
+    button.className =
+        className;
+
+    button.textContent =
+        text;
+
+    button.addEventListener(
+        "click",
+        callback
+    );
+
+    return button;
+
+}
+
+
+// ============================================================
+// OPEN FOLDER
+// ============================================================
+
+async function openFolder(path) {
+
+    currentFolder =
+        path;
+
+    await loadFiles();
+
+}
+
+
+// ============================================================
+// HOME
+// ============================================================
+
+homeButton.addEventListener(
+    "click",
+    async () => {
+
+        currentFolder =
+            "";
+
+        await loadFiles();
+
+    }
+);
+
+
+// ============================================================
+// SEARCH
+// ============================================================
+
+searchInput.addEventListener(
+    "input",
+    () => {
+
+        displayItems();
+
+    }
+);
+
+
+// ============================================================
+// NEW FOLDER
+// ============================================================
+
+newFolderButton.addEventListener(
+    "click",
+    async () => {
+
+        const name =
+            prompt(
+                "Enter the new folder name:"
+            );
+
+        if (!name) {
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/folders",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            name: name,
+                            parent: currentFolder
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Unable to create folder"
+                );
+
+            }
+
+
+            showNotification(
+                "Folder created successfully.",
+                "success"
+            );
+
+
+            await loadFiles();
+
+            await loadStorageStats();
+
+
+        } catch (error) {
+
+            showNotification(
+                error.message,
+                "error"
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// PREVIEW FILE
+// ============================================================
+
+async function previewFile(file) {
+
+    previewTitle.textContent =
+        file.name;
+
+    previewBody.replaceChildren();
+
+    previewModal.classList.remove(
+        "hidden"
+    );
+
+
+    const extension =
+        file.extension.toLowerCase();
+
+
+    const previewUrl =
+        `/api/preview/${encodeURIComponent(file.path)}`;
+
+
+    // Images
+
+    if (
+        [
+            "jpg",
+            "jpeg",
+            "png",
+            "gif"
+        ].includes(extension)
+    ) {
+
+        const image =
+            document.createElement("img");
+
+        image.src =
+            previewUrl;
+
+        image.alt =
+            file.name;
+
+        image.className =
+            "preview-image";
+
+        previewBody.appendChild(
+            image
+        );
+
+        return;
 
     }
 
 
+    // PDF
+
+    if (extension === "pdf") {
+
+        const iframe =
+            document.createElement("iframe");
+
+        iframe.src =
+            previewUrl;
+
+        iframe.className =
+            "preview-frame";
+
+        previewBody.appendChild(
+            iframe
+        );
+
+        return;
+
+    }
+
+
+    // Text and CSV
+
+    if (
+        [
+            "txt",
+            "csv"
+        ].includes(extension)
+    ) {
+
+        try {
+
+            const response =
+                await fetch(previewUrl);
+
+            const text =
+                await response.text();
+
+            const pre =
+                document.createElement("pre");
+
+            pre.className =
+                "text-preview";
+
+            pre.textContent =
+                text;
+
+            previewBody.appendChild(
+                pre
+            );
+
+        } catch (error) {
+
+            showNotification(
+                "Unable to preview this file.",
+                "error"
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    // Other file types
+
+    const message =
+        document.createElement("p");
+
+    message.textContent =
+        "Preview is not available for this file type.";
+
+    previewBody.appendChild(
+        message
+    );
+
+}
+
+
+// ============================================================
+// CLOSE PREVIEW
+// ============================================================
+
+closePreviewButton.addEventListener(
+    "click",
+    () => {
+
+        previewModal.classList.add(
+            "hidden"
+        );
+
+        previewBody.replaceChildren();
+
+    }
+);
+
+
+// ============================================================
+// FILE INFORMATION
+// ============================================================
+
+function showFileInfo(file) {
+
+    infoBody.replaceChildren();
+
+
+    const information = [
+        ["Name", file.name],
+        ["Type", file.extension.toUpperCase() || "File"],
+        ["Size", formatBytes(file.size)],
+        ["MIME Type", file.mime_type],
+        ["Path", file.path]
+    ];
+
+
+    information.forEach(
+        ([label, value]) => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "info-row";
+
+
+            const labelElement =
+                document.createElement("strong");
+
+            labelElement.textContent =
+                label;
+
+
+            const valueElement =
+                document.createElement("span");
+
+            valueElement.textContent =
+                value;
+
+
+            row.appendChild(
+                labelElement
+            );
+
+            row.appendChild(
+                valueElement
+            );
+
+
+            infoBody.appendChild(
+                row
+            );
+
+        }
+    );
+
+
+    infoModal.classList.remove(
+        "hidden"
+    );
+
+}
+
+
+// ============================================================
+// CLOSE INFORMATION
+// ============================================================
+
+closeInfoButton.addEventListener(
+    "click",
+    () => {
+
+        infoModal.classList.add(
+            "hidden"
+        );
+
+    }
+);
+
+
+// ============================================================
+// DOWNLOAD
+// ============================================================
+
+function downloadFile(file) {
+
+    const url =
+        `/api/download/${encodeURIComponent(file.path)}`;
+
+    const link =
+        document.createElement("a");
+
+    link.href =
+        url;
+
+    link.download =
+        file.name;
+
+    document.body.appendChild(
+        link
+    );
+
+    link.click();
+
+    link.remove();
+
+}
+
+
+// ============================================================
+// RENAME
+// ============================================================
+
+async function renameItem(path) {
+
+    const oldName =
+        path.split("/").pop();
+
+
+    const newName =
+        prompt(
+            "Enter the new name:",
+            oldName
+        );
+
+
+    if (!newName || newName === oldName) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/rename",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        old_path: path,
+                        new_name: newName
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to rename item"
+            );
+
+        }
+
+
+        showNotification(
+            "Renamed successfully.",
+            "success"
+        );
+
+
+        await loadFiles();
+
+        await loadStorageStats();
+
+
+    } catch (error) {
+
+        showNotification(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// DELETE
+// ============================================================
+
+async function deleteItem(path) {
+
+    const name =
+        path.split("/").pop();
+
+
+    const confirmed =
+        confirm(
+            `Are you sure you want to delete "${name}"?`
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/delete",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        path: path
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to delete item"
+            );
+
+        }
+
+
+        showNotification(
+            "Deleted successfully.",
+            "success"
+        );
+
+
+        await loadFiles();
+
+        await loadStorageStats();
+
+
+    } catch (error) {
+
+        showNotification(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// STORAGE STATISTICS
+// ============================================================
+
+async function loadStorageStats() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/storage"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load storage statistics"
+            );
+
+        }
+
+
+        fileCount.textContent =
+            data.file_count;
+
+
+        folderCount.textContent =
+            data.folder_count;
+
+
+        storageUsed.textContent =
+            formatBytes(
+                data.total_size
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BREADCRUMB
+// ============================================================
+
+function updateBreadcrumb() {
+
+    breadcrumb.replaceChildren();
+
+
+    if (!currentFolder) {
+
+        breadcrumb.textContent =
+            "/";
+
+        return;
+
+    }
+
+
+    const parts =
+        currentFolder.split("/");
+
+
+    parts.forEach(
+        (part, index) => {
+
+            const separator =
+                document.createElement("span");
+
+            separator.textContent =
+                " / ";
+
+
+            const button =
+                document.createElement("button");
+
+            button.className =
+                "breadcrumb-link";
+
+            button.textContent =
+                part;
+
+
+            const targetPath =
+                parts
+                    .slice(0, index + 1)
+                    .join("/");
+
+
+            button.addEventListener(
+                "click",
+                async () => {
+
+                    currentFolder =
+                        targetPath;
+
+                    await loadFiles();
+
+                }
+            );
+
+
+            breadcrumb.appendChild(
+                separator
+            );
+
+            breadcrumb.appendChild(
+                button
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// CURRENT FOLDER TITLE
+// ============================================================
+
+function updateCurrentFolderTitle() {
+
+    if (!currentFolder) {
+
+        currentFolderTitle.textContent =
+            "Files";
+
+        return;
+
+    }
+
+
+    const parts =
+        currentFolder.split("/");
+
+
+    currentFolderTitle.textContent =
+        parts[parts.length - 1];
+
+}
+
+
+// ============================================================
+// FILE ICON
+// ============================================================
+
+function getFileIcon(extension) {
+
+    const icons = {
+
+        pdf: "📕",
+
+        doc: "📘",
+
+        docx: "📘",
+
+        xls: "📗",
+
+        xlsx: "📗",
+
+        csv: "📊",
+
+        ppt: "📙",
+
+        pptx: "📙",
+
+        jpg: "🖼️",
+
+        jpeg: "🖼️",
+
+        png: "🖼️",
+
+        gif: "🖼️",
+
+        zip: "🗜️",
+
+        txt: "📄"
+
+    };
+
+
+    return (
+        icons[extension] ||
+        "📄"
+    );
+
+}
+
+
+// ============================================================
+// FORMAT FILE SIZE
+// ============================================================
+
+function formatBytes(bytes) {
+
+    if (bytes === 0) {
+        return "0 B";
+    }
+
+
     const units = [
-        "Bytes",
+        "B",
         "KB",
         "MB",
         "GB"
@@ -576,109 +1391,107 @@ function formatFileSize(bytes) {
         );
 
 
-    const size =
-        bytes /
-        Math.pow(
-            1024,
-            index
-        );
-
-
-    return `${size.toFixed(1)} ${units[index]}`;
+    return (
+        parseFloat(
+            (
+                bytes /
+                Math.pow(
+                    1024,
+                    index
+                )
+            ).toFixed(2)
+        )
+        + " "
+        + units[index]
+    );
 
 }
 
 
-/* 
-   DELETE FILE
-*/
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
 
-async function deleteFile(filename) {
+function showNotification(
+    message,
+    type = "success"
+) {
 
-    const confirmed =
-        confirm(
-            `Are you sure you want to delete "${filename}"?`
-        );
+    notification.textContent =
+        message;
 
+    notification.className =
+        `notification ${type}`;
 
-    if (!confirmed) {
+    setTimeout(
+        () => {
 
-        return;
-
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/files/${encodeURIComponent(filename)}`,
-                {
-                    method: "DELETE"
-                }
+            notification.classList.add(
+                "hidden"
             );
 
+        },
+        3000
+    );
 
-        const result =
-            await response.json();
-
-
-        if (result.success) {
-
-            showNotification(
-                result.message,
-                "success"
-            );
+}
 
 
-            await loadFiles();
+// ============================================================
+// UPLOAD STATUS
+// ============================================================
 
-            await loadStorageStats();
+function showUploadStatus(message) {
+
+    uploadStatus.textContent =
+        message;
+
+    uploadStatus.classList.remove(
+        "hidden"
+    );
+
+}
 
 
-        } else {
+function hideUploadStatus() {
 
-            showNotification(
-                result.message,
-                "error"
+    uploadStatus.classList.add(
+        "hidden"
+    );
+
+}
+
+
+// ============================================================
+// CLOSE MODALS WHEN CLICKING OUTSIDE
+// ============================================================
+
+window.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target ===
+            previewModal
+        ) {
+
+            previewModal.classList.add(
+                "hidden"
             );
 
         }
 
 
-    } catch (error) {
+        if (
+            event.target ===
+            infoModal
+        ) {
 
-        console.error(
-            "Delete error:",
-            error
-        );
+            infoModal.classList.add(
+                "hidden"
+            );
 
-
-        showNotification(
-            "Could not delete the file.",
-            "error"
-        );
+        }
 
     }
-
-}
-
-
-/* 
-   LOAD DATA WHEN PAGE OPENS
-*/
-
-loadFiles();
-
-loadStorageStats();
-
-
-/* 
-   INITIAL BUTTON STATE
-*/
-
-uploadButton.disabled =
-    false;
-
-uploadButton.textContent =
-    "Choose Files";
+);
